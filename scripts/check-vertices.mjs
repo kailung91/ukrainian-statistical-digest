@@ -1,0 +1,1 @@
+import { OBLASTS } from "../src/data/oblasts.js"; const counts = Object.entries(OBLASTS).map(([k, v]) => ({ key: k, vertices: (v.d.match(/L/g) || []).length + 1 })).sort((a,b) => b.vertices - a.vertices); console.table(counts);

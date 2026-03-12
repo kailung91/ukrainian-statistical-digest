@@ -78,3 +78,21 @@
 **Regenerate:** node scripts/geojson-to-svg.js (from repo root)
 **Gotcha:** GADM uses "Kiev" / "Kiev City" (not "Kyiv") — mapping handles both spellings
 **Gotcha:** MultiPolygon → takes largest ring by vertex count (works for all Ukrainian oblasts)
+
+## [today] — Props chain fix + extraction prompt v2
+
+**Bug 1:** oblastData was not flowing to MapView — minV/maxV computed in wrong place.
+  Fix: all derived values (ramp, meta, minV, maxV, top5) computed in App.jsx,
+  passed as props. Children are pure display — no recomputation.
+
+**Bug 2:** Gemini returned national totals instead of oblast breakdown.
+  Root cause: prompt did not distinguish regional tables from national aggregates.
+  Fix: explicit instruction — national figures go to stats[], oblastData only for
+  per-oblast values. If no regional table found → oblastData: {}.
+
+**UI pattern:** When oblastData is empty → show notice under map.
+  Do NOT show a broken grey map with "0  0" legend — confusing.
+
+**Test PDF:** w_m_2025_merged_organized_2.pdf (Жінки і чоловіки в Україні)
+  This document has only national totals → oblastData: {} is CORRECT behavior.
+  To test oblast coloring — use a PDF with regional tables (e.g. зайнятість by oblast).

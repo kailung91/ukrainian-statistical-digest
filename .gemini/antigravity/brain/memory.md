@@ -96,3 +96,9 @@
 **Test PDF:** w_m_2025_merged_organized_2.pdf (Жінки і чоловіки в Україні)
   This document has only national totals → oblastData: {} is CORRECT behavior.
   To test oblast coloring — use a PDF with regional tables (e.g. зайнятість by oblast).
+
+GIT_WORKFLOW_RULE:
+Після кожної завершеної логічної зміни у коді (створення файлу, виправлення багу, додавання функції) ти зобов'язаний автоматично створювати коміт. 
+Послідовність команд:
+1. git add .
+2. git commit -m "тип_зміни: короткий опис англійською"

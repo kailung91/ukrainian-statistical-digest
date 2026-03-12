@@ -9,7 +9,7 @@ export default function UploadScreen({ onFile, stage, progress, fileName, onRetr
     setDrag(false);
     if (stage !== "upload") return;
     const file = e.dataTransfer.files[0];
-    if (file && file.type === "application/pdf") onFile(file);
+    if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv")) onFile(file);
   };
 
   const handleDragOver = (e) => {
@@ -21,7 +21,7 @@ export default function UploadScreen({ onFile, stage, progress, fileName, onRetr
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type === "application/pdf") onFile(file);
+    if (file && (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv")) onFile(file);
   };
 
   return (
@@ -65,7 +65,7 @@ export default function UploadScreen({ onFile, stage, progress, fileName, onRetr
             <input
               id="pdf-upload"
               type="file"
-              accept="application/pdf"
+              accept="application/pdf, text/csv, .csv"
               style={{ display: "none" }}
               onChange={handleFileChange}
             />

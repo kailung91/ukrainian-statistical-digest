@@ -5,6 +5,7 @@ import { parseJSON } from "./utils/parseJSON";
 import { RAMPS, TOPIC_META, UI_STRINGS } from "./constants/mapConfig";
 
 import { extractPdf } from "./services/extractPdf.js";
+import { processCsv } from "./services/processCsv.js";
 import UploadScreen from "./components/UploadScreen";
 import PrintSheet from "./components/PrintSheet";
 
@@ -50,11 +51,16 @@ export default function App() {
     setDocTitle("");
   };
 
-  const processPDF = async (file) => {
+  const processFile = async (file) => {
     setFileName(file.name);
     setStage("processing");
     try {
-      const result = await extractPdf(file, setProgress);
+      let result;
+      if (file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv") {
+        result = await processCsv(file);
+      } else {
+        result = await extractPdf(file, setProgress);
+      }
 
       setTopic(result.topic);
       setPeriod(result.period);
@@ -110,7 +116,7 @@ export default function App() {
           </button>
         )}
         <UploadScreen 
-          onFile={processPDF} 
+          onFile={processFile} 
           stage={stage} 
           progress={progress} 
           fileName={fileName} 

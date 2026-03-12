@@ -21,3 +21,13 @@
 
 ## Open Questions
 - None currently flagged.
+
+## 2026-03-12 — Vite SPA core scaffold
+
+**Decision:** Split App.jsx into 8 focused components (UploadScreen, MapView, Legend, Top5Bars, StatsGrid, SummaryBlock, Disclaimer, PrintSheet).
+**Rationale:** Each component has a single responsibility. PrintSheet composes all display components — easy to replace for future PDF export or email variants.
+**Gotchas:**
+- MapView injects .ob:hover style via <style> tag — no CSS modules.
+- EB Garamond loaded imperatively in main.jsx to avoid FOUC.
+- processPDF in App.jsx calls /api/extract in production, falls back to direct Anthropic call when VITE_ANTHROPIC_API_KEY is set (dev only).
+**File count:** 15 source files, 2 test files, ~900 lines total.

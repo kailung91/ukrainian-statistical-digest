@@ -48,7 +48,7 @@ export default function UploadScreen({ onFile, stage, progress, fileName, onRetr
         style={{
           width: 400,
           padding: 40,
-          border: \`2px dashed \${drag ? "#e8d5a3" : "#333"}\`,
+          border: `2px dashed ${drag ? "#e8d5a3" : "#333"}`,
           borderRadius: 8,
           textAlign: "center",
           animation: "fade 0.5s ease-in",

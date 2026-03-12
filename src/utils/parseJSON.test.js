@@ -8,11 +8,7 @@ describe("parseJSON util", () => {
   });
 
   it("strips markdown json fences", () => {
-    const raw = \`\`\`\`json
-{
-  "key": "value"
-}
-\`\`\`\`;
+    const raw = "```json\n{\n  \"key\": \"value\"\n}\n```";
     expect(parseJSON(raw)).toEqual({ key: "value" });
   });
 

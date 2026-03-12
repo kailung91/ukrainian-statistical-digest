@@ -72,7 +72,7 @@ export default function App() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error?.message || \`Помилка сервера: \${res.status}\`);
+        throw new Error(err.error?.message || `Помилка сервера: ${res.status}`);
       }
 
       const data = await res.json();

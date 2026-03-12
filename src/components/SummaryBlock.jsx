@@ -10,7 +10,7 @@ export default function SummaryBlock({ summary, aiLabel }) {
             marginLeft: 10, fontSize: 11, background: "#d1c9b6", padding: "2px 6px", 
             borderRadius: 4, textTransform: "uppercase", letterSpacing: 0.5 
           }}>
-            {UI_STRINGS.ai_label}
+            {import.meta.env.VITE_AI_PROVIDER === "claude" ? "AI · Claude" : "AI · Gemini"}
           </span>
         )}
       </div>

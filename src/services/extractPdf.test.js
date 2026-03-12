@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { server } from "../test/mocks/server.js";
 import { http, HttpResponse } from "msw";
 import { extractPdf } from "./extractPdf.js";
@@ -22,9 +22,23 @@ const VALID_RESPONSE = {
 };
 
 describe("extractPdf", () => {
+  const originalEnv = { ...import.meta.env };
+
+  beforeEach(() => {
+    // Force dev mode off, remove keys, force proxy behavior
+    import.meta.env.DEV = false;
+    delete import.meta.env.VITE_GEMINI_API_KEY;
+    delete import.meta.env.VITE_ANTHROPIC_API_KEY;
+    import.meta.env.VITE_AI_PROVIDER = "gemini";
+  });
+
+  afterEach(() => {
+    Object.assign(import.meta.env, originalEnv);
+  });
+
   it("returns parsed extraction result", async () => {
-    server.use(http.post("https://api.anthropic.com/v1/messages", () =>
-      HttpResponse.json({ content: [{ type: "text", text: JSON.stringify(VALID_RESPONSE) }] })
+    server.use(http.post("http://localhost:5173/api/extract", () =>
+      HttpResponse.json({ text: JSON.stringify(VALID_RESPONSE) })
     ));
     const result = await extractPdf(MOCK_FILE);
     expect(result.topic).toBe("labor");
@@ -33,31 +47,31 @@ describe("extractPdf", () => {
   });
 
   it("strips invalid oblast keys", async () => {
-    server.use(http.post("https://api.anthropic.com/v1/messages", () =>
-      HttpResponse.json({ content: [{ type: "text", text: JSON.stringify(VALID_RESPONSE) }] })
+    server.use(http.post("http://localhost:5173/api/extract", () =>
+      HttpResponse.json({ text: JSON.stringify(VALID_RESPONSE) })
     ));
     const result = await extractPdf(MOCK_FILE);
     expect(result.oblastData).not.toHaveProperty("INVALID_KEY");
   });
 
   it("throws on API error", async () => {
-    server.use(http.post("https://api.anthropic.com/v1/messages", () =>
+    server.use(http.post("http://localhost:5173/api/extract", () =>
       HttpResponse.json({ error: { message: "Test error" } })
     ));
     await expect(extractPdf(MOCK_FILE)).rejects.toThrow("Test error");
   });
 
   it("throws on invalid JSON response", async () => {
-    server.use(http.post("https://api.anthropic.com/v1/messages", () =>
-      HttpResponse.json({ content: [{ type: "text", text: "не JSON" }] })
+    server.use(http.post("http://localhost:5173/api/extract", () =>
+      HttpResponse.json({ text: "не JSON" })
     ));
     await expect(extractPdf(MOCK_FILE)).rejects.toThrow("невалідний JSON");
   });
 
   it("defaults unknown topic to labor", async () => {
     const bad = { ...VALID_RESPONSE, topic: "unknown" };
-    server.use(http.post("https://api.anthropic.com/v1/messages", () =>
-      HttpResponse.json({ content: [{ type: "text", text: JSON.stringify(bad) }] })
+    server.use(http.post("http://localhost:5173/api/extract", () =>
+      HttpResponse.json({ text: JSON.stringify(bad) })
     ));
     const result = await extractPdf(MOCK_FILE);
     expect(result.topic).toBe("labor");

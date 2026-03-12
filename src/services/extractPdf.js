@@ -1,5 +1,8 @@
-import { toBase64 } from "../utils/pdfToBase64.js";
-import { parseJSON } from "../utils/parseJSON.js";
+// src/services/extractPdf.js
+import { toBase64 }   from "../utils/pdfToBase64.js";
+import { parseJSON }  from "../utils/parseJSON.js";
+import { callGemini } from "./providers/gemini.js";
+import { callClaude } from "./providers/claude.js";
 
 const EXTRACTION_PROMPT = `Ти — аналітик Держстату України. Проаналізуй цей PDF і поверни ТІЛЬКИ валідний JSON, без жодного тексту до або після.
 
@@ -40,53 +43,50 @@ function validateOblastData(raw) {
   );
 }
 
+function resolveProvider() {
+  const provider = import.meta.env.VITE_AI_PROVIDER ?? "gemini";
+  if (provider === "claude") return callClaude;
+  if (provider === "gemini") return callGemini;
+  console.warn(`Невідомий провайдер "${provider}", використовуємо gemini`);
+  return callGemini;
+}
+
 export async function extractPdf(file, onProgress) {
   onProgress?.("Зчитую PDF…");
   const b64 = await toBase64(file);
 
-  onProgress?.("AI аналізує документ…");
+  const provider = resolveProvider();
+  const providerName = import.meta.env.VITE_AI_PROVIDER ?? "gemini";
+  onProgress?.(`${providerName === "claude" ? "Claude" : "Gemini"} аналізує документ…`);
 
-  // In dev: use VITE_ANTHROPIC_API_KEY directly (never in production)
-  // In prod: route through /api/extract proxy
-  const isDev = import.meta.env.DEV && import.meta.env.VITE_ANTHROPIC_API_KEY;
+  // In production: route through /api/extract proxy (provider handled server-side)
+  // In dev with key set: call provider directly
+  const isDev = import.meta.env.DEV;
+  const hasGeminiKey = !!import.meta.env.VITE_GEMINI_API_KEY;
+  const hasClaudeKey = !!import.meta.env.VITE_ANTHROPIC_API_KEY;
 
-  let response;
-  if (isDev) {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } },
-            { type: "text", text: EXTRACTION_PROMPT },
-          ],
-        }],
-      }),
-    });
+  let rawText;
+  if (isDev && (hasGeminiKey || hasClaudeKey)) {
+    rawText = await provider(b64, EXTRACTION_PROMPT);
   } else {
-    response = await fetch("/api/extract", {
+    const response = await fetch("http://localhost:5173/api/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ base64: b64, mimeType: "application/pdf" }),
+      body: JSON.stringify({
+        base64: b64,
+        mimeType: "application/pdf",
+        provider: providerName,
+      }),
     });
+    const json = await response.json();
+    if (json.error) throw new Error(json.error.message ?? "Помилка API проксі");
+    rawText = json.text;
   }
-
-  const json = await response.json();
-  if (json.error) throw new Error(json.error.message ?? "Помилка Anthropic API");
 
   onProgress?.("Будую карту…");
 
-  const raw = json.content?.find(b => b.type === "text")?.text ?? "";
-  const parsed = parseJSON(raw);
-  if (!parsed) throw new Error(`AI повернув невалідний JSON:\n${raw.slice(0, 400)}`);
+  const parsed = parseJSON(rawText);
+  if (!parsed) throw new Error(`AI повернув невалідний JSON:\n${rawText.slice(0, 400)}`);
 
   return {
     topic:       ["labor","trade","gdp","population"].includes(parsed.topic) ? parsed.topic : "labor",

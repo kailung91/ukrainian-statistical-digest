@@ -5,7 +5,7 @@ import { callGemini } from "./gemini.js";
 
 // Mock env
 import.meta.env.VITE_GEMINI_API_KEY = "test-key";
-import.meta.env.VITE_GEMINI_MODEL   = "gemini-2.5-flash";
+import.meta.env.VITE_GEMINI_MODEL   = "gemini-2.5-flash-lite";
 
 const GEMINI_URL = /generativelanguage\.googleapis\.com/;
 

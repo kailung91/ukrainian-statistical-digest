@@ -4,7 +4,7 @@
 // PDF inline base64 supported up to 20MB
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_MODEL    = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-2.5-flash";
+const GEMINI_MODEL    = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 
 export async function callGemini(b64, prompt) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;

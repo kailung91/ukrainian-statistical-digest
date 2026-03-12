@@ -4,6 +4,7 @@ import { toBase64 } from "./utils/pdfToBase64";
 import { parseJSON } from "./utils/parseJSON";
 import { RAMPS, TOPIC_META, UI_STRINGS } from "./constants/mapConfig";
 
+import { extractPdf } from "./services/extractPdf.js";
 import UploadScreen from "./components/UploadScreen";
 import PrintSheet from "./components/PrintSheet";
 
@@ -30,81 +31,72 @@ export default function App() {
   };
 
   const processPDF = async (file) => {
-    setStage("processing");
     setFileName(file.name);
-    setProgress("Аналіз документа...");
-    
+    setStage("processing");
     try {
-      const base64 = await toBase64(file);
-      
-      const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
-      
-      if (!apiKey) {
-        throw new Error("API ключ не знайдено (VITE_ANTHROPIC_API_KEY). Додайте ключ у .env.local.");
+      const result = await extractPdf(file, setProgress);
+
+      setTopic(result.topic);
+      setPeriod(result.period);
+      setDocTitle(result.title);
+      setOblastData(result.oblastData);
+      setStats(result.stats);
+      setSummary(result.summary);
+
+      // Override TOPIC_META display values if model returned them
+      if (TOPIC_META[result.topic]) {
+        if (result.unit)        TOPIC_META[result.topic].unit        = result.unit;
+        if (result.description) TOPIC_META[result.topic].description = result.description;
+        if (result.title)       TOPIC_META[result.topic].label       = result.title;
       }
 
-      const prompt = `Витягни ключові статистичні показники (ринок праці, торгівля або ВВП) та підготуй підсумок у форматі JSON. 
-Поля: topic (одне з: labor, trade, gdp, population), period, docTitle, summary, stats (масив об'єктів {label, value, delta}), oblastData (ключ - snake_case області, значення - {value: number, metric: string}).
-Потрібні області: ${Object.keys(OBLASTS).join(", ")}.`;
-
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerously-allow-browser": "true"
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-                { type: "text", text: prompt }
-              ]
-            }
-          ]
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || `Помилка сервера: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const rawMsg = data.content?.[0]?.text;
-      const parsed = parseJSON(rawMsg);
-      
-      if (!parsed) throw new Error("Не вдалося розпізнати JSON-відповідь.");
-
-      setTopic(parsed.topic || "labor");
-      setPeriod(parsed.period || "");
-      setDocTitle(parsed.docTitle || "Аналітичний звіт");
-      setSummary(parsed.summary || "");
-      setStats(parsed.stats || []);
-      setOblastData(parsed.oblastData || {});
-      
       setStage("ready");
     } catch (err) {
       console.error(err);
-      setProgress(err.message || "Сталася помилка при обробці документа.");
+      setProgress(err.message ?? "Невідома помилка");
       setStage("error");
     }
   };
 
+  const handleMockDevTest = () => {
+    setTopic("labor");
+    setPeriod("Q1 2025 (тест)");
+    setDocTitle("Тестові дані");
+    setOblastData({
+      kyiv_city: 8.2, lviv: 10.1, dnipro: 12.4, kharkiv: 9.8,
+      odessa: 11.3, poltava: 13.1, sumy: 15.6, chernihiv: 14.2,
+      vinnytsia: 10.9, ternopil: 12.0,
+    });
+    setStats([
+      { label: "Середній рівень", value: "11,8%", delta: "+0,4%" },
+      { label: "Мін. значення",   value: "8,2%",  delta: null   },
+      { label: "Макс. значення",  value: "15,6%", delta: null   },
+      { label: "Охоплено областей", value: "10",  delta: null   },
+    ]);
+    setSummary("Тестовий підсумок. Карта рендериться з мок-даними для перевірки всіх компонентів.");
+    setStage("ready");
+  };
+
   if (stage !== "ready") {
     return (
-      <UploadScreen 
-        onFile={processPDF} 
-        stage={stage} 
-        progress={progress} 
-        fileName={fileName} 
-        onRetry={reset} 
-      />
+      <div style={{ position: "relative" }}>
+        {import.meta.env.DEV && stage === "upload" && (
+          <button
+            onClick={handleMockDevTest}
+            style={{ position: "absolute", top: 16, left: 16, padding: "6px 16px", background: "#2a4a2c", color: "#8aaa8c",
+                     border: "1px solid #3a6a3c", borderRadius: 3, fontSize: 11, cursor: "pointer", zIndex: 10 }}
+          >
+            [DEV] Тест з мок-даними
+          </button>
+        )}
+        <UploadScreen 
+          onFile={processPDF} 
+          stage={stage} 
+          progress={progress} 
+          fileName={fileName} 
+          onRetry={reset} 
+        />
+      </div>
     );
   }
 

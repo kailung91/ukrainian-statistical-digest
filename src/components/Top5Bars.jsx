@@ -1,20 +1,12 @@
-export default function Top5Bars({ oblastData, ramp, unit, OBLASTS }) {
-  const validData = Object.entries(oblastData)
-    .filter(([k, d]) => d?.value != null && OBLASTS[k])
-    .map(([k, d]) => ({ k, val: d.value, name: OBLASTS[k].name }))
-    .sort((a, b) => b.val - a.val)
-    .slice(0, 5);
+export default function Top5Bars({ top5, ramp, unit, minV, maxV, OBLASTS }) {
+  if (!top5?.length) return null;
 
-  if (!validData.length) return null;
-
-  const minV = Math.min(...validData.map(d => d.val));
-  const maxV = Math.max(...validData.map(d => d.val));
   const range = maxV === minV ? 1 : maxV - minV;
 
   return (
     <div style={{ marginTop: 25 }}>
       <h4 style={{ marginBottom: 15, fontSize: 16 }}>ТОП-5 Регіонів</h4>
-      {validData.map((item, idx) => {
+      {top5.map((item, idx) => {
         const pct = ((item.val - minV) / range) * 100;
         const width = Math.max(5, pct); // min width 5%
         

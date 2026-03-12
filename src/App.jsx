@@ -19,6 +19,26 @@ export default function App() {
   const [period, setPeriod] = useState("");
   const [docTitle, setDocTitle] = useState("");
 
+  const ramp = RAMPS[topic] ?? RAMPS.labor;
+  const meta = TOPIC_META[topic] ?? TOPIC_META.labor;
+
+  const vals = Object.values(oblastData)
+    .map(d => (typeof d === "object" ? d.value : d))
+    .filter(v => typeof v === "number" && isFinite(v));
+    
+  const minV = vals.length ? Math.min(...vals) : 0;
+  const maxV = vals.length ? Math.max(...vals) : 0;
+
+  const top5 = Object.entries(oblastData)
+    .map(([k, d]) => ({ 
+      k, 
+      val: typeof d === "object" ? d.value : d, 
+      name: OBLASTS[k]?.name || k 
+    }))
+    .filter(({k, val}) => typeof val === "number" && isFinite(val) && OBLASTS[k])
+    .sort((a, b) => b.val - a.val)
+    .slice(0, 5);
+
   const reset = () => {
     setStage("upload");
     setFileName("");
@@ -137,9 +157,12 @@ export default function App() {
         period={period} 
         docTitle={docTitle} 
         fileName={fileName}
+        ramp={ramp}
+        meta={meta}
+        minV={minV}
+        maxV={maxV}
+        top5={top5}
         OBLASTS={OBLASTS}
-        RAMPS={RAMPS}
-        TOPIC_META={TOPIC_META}
       />
       
     </div>

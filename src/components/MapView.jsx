@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { obColor } from "../utils/colorRamp";
 import { UI_STRINGS } from "../constants/mapConfig";
 
-export default function MapView({ oblastData, ramp, unit, OBLASTS }) {
+export default function MapView({ oblastData, ramp, unit, minV, maxV, OBLASTS }) {
   const [hovered, setHovered] = useState(null);
   const [ttPos, setTtPos] = useState({ x: 0, y: 0 });
   const svgRef = useRef(null);
@@ -24,13 +24,6 @@ export default function MapView({ oblastData, ramp, unit, OBLASTS }) {
 
   const handleMouseLeave = () => setHovered(null);
 
-  const vals = Object.values(oblastData)
-    .map(d => d?.value)
-    .filter(v => typeof v === "number" && !isNaN(v));
-  
-  const minV = vals.length ? Math.min(...vals) : 0;
-  const maxV = vals.length ? Math.max(...vals) : 0;
-
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <style>{`
@@ -43,7 +36,8 @@ export default function MapView({ oblastData, ramp, unit, OBLASTS }) {
         <rect x="-20" y="40" width="930" height="510" fill="#ddd8ca" />
         
         {Object.entries(OBLASTS).map(([key, info]) => {
-          const val = oblastData[key]?.value;
+          const rawVal = oblastData[key];
+          const val = typeof rawVal === "object" ? rawVal.value : rawVal;
           const fill = obColor(val, ramp, minV, maxV);
           return (
             <path
@@ -78,6 +72,18 @@ export default function MapView({ oblastData, ramp, unit, OBLASTS }) {
           * АР Крим та окремі райони включно, статус: тимчасово окуповані.
         </text>
       </svg>
+      {Object.keys(oblastData).length === 0 && (
+        <div style={{
+          fontSize: 10,
+          color: "#8a8070",
+          fontStyle: "italic",
+          textAlign: "center",
+          marginTop: 4,
+          padding: "6px 0",
+        }}>
+          Регіональна розбивка у цьому документі відсутня — карта не забарвлена
+        </div>
+      )}
     </div>
   );
 }

@@ -5,13 +5,10 @@ import StatsGrid from "./StatsGrid";
 import SummaryBlock from "./SummaryBlock";
 import Disclaimer from "./Disclaimer";
 
-export default function PrintSheet({ topic, oblastData, stats, summary, period, docTitle, fileName, OBLASTS, RAMPS, TOPIC_META }) {
-  const meta = TOPIC_META[topic];
-  const ramp = RAMPS[topic];
-
-  const vals = Object.values(oblastData).map(d => d?.value).filter(v => typeof v === "number" && !isNaN(v));
-  const minV = vals.length ? Math.min(...vals) : 0;
-  const maxV = vals.length ? Math.max(...vals) : 0;
+export default function PrintSheet({ 
+  topic, oblastData, stats, summary, period, docTitle, fileName, 
+  ramp, meta, minV, maxV, top5, OBLASTS 
+}) {
 
   return (
     <div id="sheet" style={{ 
@@ -47,21 +44,46 @@ export default function PrintSheet({ topic, oblastData, stats, summary, period, 
       </div>
 
       {/* Main Content */}
-      <div style={{ display: "flex", padding: 40, gap: 40 }}>
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "row", 
+        flex: 1, 
+        padding: "20px 24px", 
+        gap: 22 
+      }}>
         
         {/* Left Col (Map + Legend + Bars) */}
-        <div style={{ width: 480, flexShrink: 0 }}>
+        <div style={{ flex: "0 0 480px", display: "flex", flexDirection: "column", gap: 12 }}>
           <h2 style={{ fontSize: 22, borderBottom: "2px solid #333", paddingBottom: 10, marginBottom: 20 }}>
             {meta.description}
           </h2>
           
-          <MapView oblastData={oblastData} ramp={ramp} unit={meta.unit} OBLASTS={OBLASTS} />
-          <Legend ramp={ramp} minV={minV} maxV={maxV} unit={meta.unit} />
-          <Top5Bars oblastData={oblastData} ramp={ramp} unit={meta.unit} OBLASTS={OBLASTS} />
+          <MapView 
+            oblastData={oblastData} 
+            ramp={ramp} 
+            unit={meta.unit} 
+            minV={minV} 
+            maxV={maxV} 
+            OBLASTS={OBLASTS} 
+          />
+          <Legend 
+            ramp={ramp} 
+            minV={minV} 
+            maxV={maxV} 
+            unit={meta.unit} 
+          />
+          <Top5Bars 
+            top5={top5} 
+            ramp={ramp} 
+            unit={meta.unit} 
+            minV={minV} 
+            maxV={maxV} 
+            OBLASTS={OBLASTS} 
+          />
         </div>
 
         {/* Right Col (Stats + Summary + Disclaimer) */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <StatsGrid stats={stats} />
           
           <div style={{ flex: 1 }}>
